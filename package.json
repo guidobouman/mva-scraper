@@ -1,0 +1,14 @@
+{
+  "name": "mva-scraper",
+  "version": "0.0.1",
+  "description": "Scraper for mva.nl.",
+  "main": "scraper.js",
+  "author": {
+    "name": "Guido Bouman",
+    "email": "m@guido.vc"
+  },
+  "dependencies": {
+    "request": "latest",
+    "cheerio": "latest"
+  }
+}
