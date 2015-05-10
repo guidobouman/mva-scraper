@@ -1,7 +1,10 @@
 var request = require('request')
 var cheerio = require('cheerio')
+var mailgun = require('mailgun').Mailgun
 var config = require('./config')
 var secrets = require('./secrets')
+
+var mg = new mailgun(secrets.mailgunApiKey)
 
 request(config.scrapeUrl, function(error, response, html) {
   if(error) {
@@ -20,13 +23,28 @@ request(config.scrapeUrl, function(error, response, html) {
     var data = $(this).attr('value').split('~')
     var object = {
       id: data[0],
-      prijs: data[16] + ' ' + data[17] + (data[15] ? ' ' + data[15] : ''),
+      prijs: data[16] + ': ' + data[17] + (data[15] ? ' ' + data[15] : ''),
       buurt: data[5],
       status: data[23] == '1' ? 'te koop' : data[13],
       url: data[18]
     }
 
+    var message = [];
+    message.push('buurt: ' + object.buurt);
+    message.push(object.prijs);
+    message.push('status: ' + object.status);
+    message.push('');
+    message.push(object.url);
+
     console.log(object)
+
+    mg.sendText(
+      'MVA Scraper <mva-scraper@mg.xiro.nl>',
+      'Guido Bouman <m@guido.vc>',
+      'Nieuw huis gevonden!',
+      message.join("\n"),
+      function(err) { err && console.log(err) }
+    );
   });
 })
 

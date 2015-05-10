@@ -8,7 +8,8 @@
     "email": "m@guido.vc"
   },
   "dependencies": {
+    "cheerio": "latest",
+    "mailgun": "latest",
     "request": "latest",
-    "cheerio": "latest"
   }
 }
