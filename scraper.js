@@ -1,6 +1,7 @@
 var request = require('request')
 var cheerio = require('cheerio')
 var config = require('./config')
+var secrets = require('./secrets')
 
 request(config.scrapeUrl, function(error, response, html) {
   if(error) {
