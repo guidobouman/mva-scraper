@@ -1,9 +1,8 @@
 var request = require('request')
 var cheerio = require('cheerio')
+var config = require('./config')
 
-url = 'http://www.mva.nl/koop/amsterdam/prijs-125000-200000/aantalkamers-2/sorteren-af-datum/'
-
-request(url, function(error, response, html){
+request(config.scrapeUrl, function(error, response, html) {
   if(error) {
     console.error(error)
     return
