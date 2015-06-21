@@ -11,5 +11,6 @@
     "cheerio": "latest",
     "mailgun": "latest",
     "request": "latest",
+    "rethinkdb": "^2.0.0"
   }
 }

@@ -1,3 +1,7 @@
 {
-  "scrapeUrl": "http://www.mva.nl/koop/amsterdam/prijs-125000-200000/aantalkamers-2/sorteren-af-datum/"
+  "scrapeUrl": "http://www.mva.nl/koop/amsterdam/prijs-125000-200000/aantalkamers-2/sorteren-af-datum/",
+  "rethinkdb": {
+    "db": "mva_scraper",
+    "table": "properties"
+  }
 }

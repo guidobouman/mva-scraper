@@ -1,52 +1,94 @@
 var request = require('request')
 var cheerio = require('cheerio')
 var mailgun = require('mailgun').Mailgun
+var rethinkdb = require('rethinkdb');
 var config = require('./config')
 var secrets = require('./secrets')
 
 var mg = new mailgun(secrets.mailgunApiKey)
 
-request(config.scrapeUrl, function(error, response, html) {
-  if(error) {
-    console.error(error)
-    return
-  }
-
-  var $ = cheerio.load(html)
-
-  $('#ObjectsContainer input[type=hidden]').each(function() {
-    var id = $(this).attr('id')
-    if(id == 'mgmMarkerIDs'){
+var connection = null;
+var table = null;
+rethinkdb.connect(config.rethinkdb, function(err, conn) {
+    if(err) {
+      console.error(err)
       return
     }
 
-    var data = $(this).attr('value').split('~')
-    var object = {
-      id: data[0],
-      prijs: data[16] + ': ' + data[17] + (data[15] ? ' ' + data[15] : ''),
-      buurt: data[5],
-      status: data[23] == '1' ? 'te koop' : data[13],
-      url: data[18]
+    connection = conn;
+    table = rethinkdb.table(config.rethinkdb.table)
+
+    scrape()
+})
+
+var scrape = function() {
+  console.log('Starting scraper.')
+
+  request(config.scrapeUrl, function(err, response, html) {
+    if(err) {
+      console.error(err)
+      return
     }
 
-    var message = [];
-    message.push('buurt: ' + object.buurt);
-    message.push(object.prijs);
-    message.push('status: ' + object.status);
-    message.push('');
-    message.push(object.url);
+    var $ = cheerio.load(html)
 
-    console.log(object)
+    $('#ObjectsContainer input[type=hidden]').each(function() {
+      var id = $(this).attr('id')
+      if(id == 'mgmMarkerIDs'){
+        return
+      }
 
-    mg.sendText(
-      'MVA Scraper <mva-scraper@mg.xiro.nl>',
-      'Guido Bouman <m@guido.vc>',
-      'Nieuw huis gevonden!',
-      message.join("\n"),
-      function(err) { err && console.log(err) }
-    );
-  });
-})
+      var data = $(this).attr('value').split('~')
+      var object = {
+        id: data[0],
+        prijs: data[16] + ': ' + data[17] + (data[15] ? ' ' + data[15] : ''),
+        buurt: data[5],
+        status: data[23] == '1' ? 'te koop' : data[13],
+        url: data[18]
+      }
+
+      table.get(object.id).run(connection, function(err, result) {
+        if(err) {
+          console.error(err)
+          return
+        }
+
+        if(result != null) {
+          console.log('Property ' + object.id + ' already in db')
+          return
+        }
+
+        console.log('Found new property: ' + object.id + ', mailing...')
+
+        var message = []
+        message.push('buurt: ' + object.buurt)
+        message.push(object.prijs)
+        message.push('status: ' + object.status)
+        message.push('')
+        message.push(object.url)
+
+        mg.sendText(
+          'MVA Scraper <mva-scraper@mg.xiro.nl>',
+          'Guido Bouman <m@guido.vc>',
+          'Nieuw huis gevonden!',
+          message.join("\n"),
+          function(err) {
+            if(err) {
+              console.error(err)
+              return
+            }
+
+            console.log('- Mail sent.')
+          }
+        );
+
+        table.insert(object).run(connection)
+      })
+    })
+
+    connection.close();
+  })
+}
 
 // 00 : ID               'ReaOP1135624512',
 // 01 : ?                '1',
